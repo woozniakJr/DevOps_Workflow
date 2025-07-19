@@ -48,7 +48,7 @@ export default function EnseignantDashboard() {
               <span className="bg-indigo-100 text-indigo-700 p-3 rounded-full mr-3">
                 <FaChalkboardTeacher className="text-xl" />
               </span>
-              Bonjour {user?.nom} <span className="ml-2 pt-16">👨‍🏫</span>
+              Bonjour {user?.prenom} {user?.nom}  <span className="ml-2 pt-20">👨‍🏫</span>
             </h1>
             <p className="text-gray-600 text-lg">Tableau de bord de vos classes et évaluations</p>
           </div>

@@ -43,7 +43,7 @@ const connecter = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({ token, user: { id: user._id, nom: user.nom, role: user.role } });
+    res.json({ token, user: { id: user._id, prenom: user.prenom, nom: user.nom, role: user.role } });
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur" });
   }

@@ -9,35 +9,25 @@ pipeline {
   }
 
   stages {
-    stage('Checkout Code') {
-      steps {
-        git 'https://github.com/woozniakJr/DevOps_Workflow'
-      }
-    }
-
     stage('Build Backend Image') {
       steps {
-        dir('backend') {
-          sh 'docker build -t $BACKEND_IMAGE .'
-        }
+        sh 'docker build -t $IMAGE_NAME_BACKEND ./backend'
       }
     }
 
     stage('Build Frontend Image') {
       steps {
-        dir('frontend') {
-          sh 'docker build -t $FRONTEND_IMAGE .'
-        }
+        sh 'docker build -t $IMAGE_NAME_FRONTEND ./frontend'
       }
     }
 
     stage('Push to Docker Hub') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'devflow', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        withCredentials([usernamePassword(credentialsId: 'devflow', usernameVariable: 'mouhamed2555', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker push $BACKEND_IMAGE
-            docker push $FRONTEND_IMAGE
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker push $IMAGE_NAME_BACKEND
+            docker push $IMAGE_NAME_FRONTEND
           '''
         }
       }
@@ -45,8 +35,7 @@ pipeline {
 
     stage('Deploy with Docker Compose') {
       steps {
-        sh 'docker-compose down || true'
-        sh 'docker-compose up -d --build'
+        sh 'docker-compose down && docker-compose up -d'
       }
     }
   }

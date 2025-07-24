@@ -8,6 +8,17 @@ pipeline {
   }
 
   stages {
+
+    stage('Install Trivy') {
+      steps {
+        sh '''
+          echo "🔧 Installing Trivy..."
+          wget -q https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.64.1_Linux-64bit.deb
+        '''
+      }
+    }
+
     stage('Build Backend Image') {
       steps {
         sh 'docker build -t $BACKEND_IMAGE ./backend'
@@ -20,9 +31,10 @@ pipeline {
       }
     }
 
-    stage('Trivy Scan Images') {
+    stage('Scan Docker Images with Trivy') {
       steps {
         sh '''
+          echo "📦 Running Trivy scan..."
           mkdir -p trivy-reports
 
           echo "🔍 Scan Backend image..."

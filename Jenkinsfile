@@ -7,16 +7,17 @@ pipeline {
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
   }
 
-  stage('Install Trivy') {
-  steps {
-    sh '''
-      echo "🔧 Installing Trivy..."
-      curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb -o trivy.deb
-      sudo dpkg -i trivy.deb
-    '''
-  }
-}
-
+  stages {
+    stage('Install Trivy') {
+      steps {
+        sh '''
+          echo "🔧 Installing Trivy..."
+          curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb -o trivy.deb
+          sudo dpkg -i trivy.deb
+          trivy --version
+        '''
+      }
+    }
 
     stage('Build Backend Image') {
       steps {
@@ -33,15 +34,18 @@ pipeline {
     stage('Scan Docker Images with Trivy') {
       steps {
         sh '''
-          echo "📦 Running Trivy scan..."
           mkdir -p trivy-reports
-
           echo "🔍 Scan Backend image..."
           trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
 
           echo "🔍 Scan Frontend image..."
           trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
         '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'trivy-reports/*.json', allowEmptyArchive: true
+        }
       }
     }
 
@@ -61,12 +65,6 @@ pipeline {
       steps {
         sh 'docker-compose down && docker-compose up -d'
       }
-    }
-  }
-
-  post {
-    always {
-      archiveArtifacts artifacts: 'trivy-reports/*.json', fingerprint: true
     }
   }
 }

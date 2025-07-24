@@ -6,7 +6,6 @@ pipeline {
     FRONTEND_IMAGE = "${DOCKER_NAMESPACE}/frontend:latest"
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
     TRIVY_VERSION = "0.64.1"
-    REPORTS_DIR = "trivy-reports" // dossier relatif compatible avec Docker
   }
 
   stages {
@@ -23,29 +22,31 @@ pipeline {
       }
     }
 
-    stage('Scan Docker Images with Trivy (Docker container)') {
+    stage('Scan Docker Images with Trivy') {
       steps {
-        sh '''
-          mkdir -p $REPORTS_DIR
+        script {
+          sh '''
+            mkdir -p trivy-reports
 
-          echo "🔍 Scanning backend image with Trivy..."
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v ${WORKSPACE}/$REPORTS_DIR:/reports \
-            aquasec/trivy:$TRIVY_VERSION \
-            image --severity CRITICAL,HIGH --format json -o /reports/backend-report.json $BACKEND_IMAGE
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v $(pwd)/trivy-reports:/tmp/reports \
+              aquasec/trivy:$TRIVY_VERSION \
+              image --severity CRITICAL,HIGH --format json \
+              -o /tmp/reports/backend-report.json $BACKEND_IMAGE
 
-          echo "🔍 Scanning frontend image with Trivy..."
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v ${WORKSPACE}/$REPORTS_DIR:/reports \
-            aquasec/trivy:$TRIVY_VERSION \
-            image --severity CRITICAL,HIGH --format json -o /reports/frontend-report.json $FRONTEND_IMAGE
-        '''
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v $(pwd)/trivy-reports:/tmp/reports \
+              aquasec/trivy:$TRIVY_VERSION \
+              image --severity CRITICAL,HIGH --format json \
+              -o /tmp/reports/frontend-report.json $FRONTEND_IMAGE
+          '''
+        }
       }
       post {
         always {
-          archiveArtifacts artifacts: "${REPORTS_DIR}/*.json", allowEmptyArchive: true
+          archiveArtifacts artifacts: "trivy-reports/*.json", allowEmptyArchive: true
         }
       }
     }

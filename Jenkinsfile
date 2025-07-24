@@ -6,6 +6,7 @@ pipeline {
     FRONTEND_IMAGE = "${DOCKER_NAMESPACE}/frontend:latest"
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
     TRIVY_VERSION = "0.64.1"
+    REPORTS_DIR = "trivy-reports" // dossier relatif compatible avec Docker
   }
 
   stages {
@@ -22,29 +23,29 @@ pipeline {
       }
     }
 
-    stage('Scan Docker Images with Trivy (via Docker)') {
+    stage('Scan Docker Images with Trivy (Docker container)') {
       steps {
         sh '''
-          mkdir -p trivy-reports
+          mkdir -p $REPORTS_DIR
 
-          echo "🔍 Scan Backend image with Trivy..."
+          echo "🔍 Scanning backend image with Trivy..."
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd)/trivy-reports:/reports \
+            -v ${WORKSPACE}/$REPORTS_DIR:/reports \
             aquasec/trivy:$TRIVY_VERSION \
             image --severity CRITICAL,HIGH --format json -o /reports/backend-report.json $BACKEND_IMAGE
 
-          echo "🔍 Scan Frontend image with Trivy..."
+          echo "🔍 Scanning frontend image with Trivy..."
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd)/trivy-reports:/reports \
+            -v ${WORKSPACE}/$REPORTS_DIR:/reports \
             aquasec/trivy:$TRIVY_VERSION \
             image --severity CRITICAL,HIGH --format json -o /reports/frontend-report.json $FRONTEND_IMAGE
         '''
       }
       post {
         always {
-          archiveArtifacts artifacts: 'trivy-reports/*.json', allowEmptyArchive: true
+          archiveArtifacts artifacts: "${REPORTS_DIR}/*.json", allowEmptyArchive: true
         }
       }
     }
@@ -63,7 +64,7 @@ pipeline {
 
     stage('Deploy with Docker Compose') {
       steps {
-        sh 'docker-compose down && docker-compose up -d'
+        sh 'docker-compose down || true && docker-compose up -d'
       }
     }
   }

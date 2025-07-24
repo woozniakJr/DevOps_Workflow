@@ -5,6 +5,7 @@ pipeline {
     DOCKER_NAMESPACE = "mouhamed2555"
     FRONTEND_IMAGE = "${DOCKER_NAMESPACE}/frontend:latest"
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
+    SONARQUBE = "SonarQube" 
   }
 
   stages {
@@ -17,6 +18,32 @@ pipeline {
     stage('Build Frontend Image') {
       steps {
         bat 'docker build -t %FRONTEND_IMAGE% ./frontend'
+      }
+    }
+
+    stage('Analyse SonarQube') {
+      steps {
+        withSonarQubeEnv("${SONARQUBE}") {
+          // Analyse backend
+          dir('backend') {
+            bat '''
+              sonar-scanner.bat ^
+                -Dsonar.projectKey=back ^
+                -Dsonar.sources=. ^
+                -Dsonar.host.url=http://localhost:9000
+            '''
+          }
+
+          // Analyse frontend
+          dir('frontend') {
+            bat '''
+              sonar-scanner.bat ^
+                -Dsonar.projectKey=front ^
+                -Dsonar.sources=. ^
+                -Dsonar.host.url=http://localhost:9000
+            '''
+          }
+        }
       }
     }
 

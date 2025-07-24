@@ -7,13 +7,6 @@ pipeline {
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
   }
 
-  stages {
-
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/woozniakJr/DevOps_Workflow.git'
-      }
-    }
 
     stage('Build Backend Image') {
       steps {

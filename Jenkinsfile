@@ -11,10 +11,12 @@ pipeline {
     stage('Install Trivy') {
       steps {
         sh '''
-          echo "🔧 Installing Trivy..."
-          curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb -o trivy.deb
-          sudo dpkg -i trivy.deb
-          trivy --version
+          echo "🔧 Installing Trivy standalone binary..."
+          curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.tar.gz -o trivy.tar.gz
+          tar zxvf trivy.tar.gz
+          chmod +x trivy
+          mv trivy $WORKSPACE/
+          $WORKSPACE/trivy --version
         '''
       }
     }
@@ -36,10 +38,10 @@ pipeline {
         sh '''
           mkdir -p trivy-reports
           echo "🔍 Scan Backend image..."
-          trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
+          $WORKSPACE/trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
 
           echo "🔍 Scan Frontend image..."
-          trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
+          $WORKSPACE/trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
         '''
       }
       post {

@@ -25,28 +25,36 @@ pipeline {
     stage('Scan Docker Images with Trivy') {
       steps {
         script {
-          sh '''
-            mkdir -p trivy-reports
+          // Chemin absolu pour Windows - Crée un dossier indépendant
+          def reportDir = "${env.WORKSPACE}/trivy-reports"
 
-            docker run --rm \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v $(pwd)/trivy-reports:/tmp/reports \
-              aquasec/trivy:$TRIVY_VERSION \
-              image --severity CRITICAL,HIGH --format json \
-              -o /tmp/reports/backend-report.json $BACKEND_IMAGE
+          // Crée le dossier pour éviter l'erreur "no such file"
+          bat "mkdir \"${reportDir}\""
 
-            docker run --rm \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v $(pwd)/trivy-reports:/tmp/reports \
-              aquasec/trivy:$TRIVY_VERSION \
-              image --severity CRITICAL,HIGH --format json \
-              -o /tmp/reports/frontend-report.json $FRONTEND_IMAGE
-          '''
+          // Lance le scan backend
+          bat """
+          docker run --rm ^
+            -v //var/run/docker.sock:/var/run/docker.sock ^
+            -v "${reportDir.replace('\\', '/')}:/reports" ^
+            aquasec/trivy:$TRIVY_VERSION ^
+            image --severity CRITICAL,HIGH --format json ^
+            -o /reports/backend-report.json $BACKEND_IMAGE
+          """
+
+          // Lance le scan frontend
+          bat """
+          docker run --rm ^
+            -v //var/run/docker.sock:/var/run/docker.sock ^
+            -v "${reportDir.replace('\\', '/')}:/reports" ^
+            aquasec/trivy:$TRIVY_VERSION ^
+            image --severity CRITICAL,HIGH --format json ^
+            -o /reports/frontend-report.json $FRONTEND_IMAGE
+          """
         }
       }
       post {
         always {
-          archiveArtifacts artifacts: "trivy-reports/*.json", allowEmptyArchive: true
+          archiveArtifacts artifacts: 'trivy-reports/*.json', allowEmptyArchive: true
         }
       }
     }
@@ -54,18 +62,18 @@ pipeline {
     stage('Push to Docker Hub') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'devflow', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh '''
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+          bat """
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
             docker push $BACKEND_IMAGE
             docker push $FRONTEND_IMAGE
-          '''
+          """
         }
       }
     }
 
     stage('Deploy with Docker Compose') {
       steps {
-        sh 'docker-compose down || true && docker-compose up -d'
+        bat 'docker-compose down || exit 0 && docker-compose up -d'
       }
     }
   }

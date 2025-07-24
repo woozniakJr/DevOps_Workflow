@@ -7,17 +7,16 @@ pipeline {
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
   }
 
-  stages {
+  stage('Install Trivy') {
+  steps {
+    sh '''
+      echo "🔧 Installing Trivy..."
+      curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb -o trivy.deb
+      sudo dpkg -i trivy.deb
+    '''
+  }
+}
 
-    stage('Install Trivy') {
-      steps {
-        sh '''
-          echo "🔧 Installing Trivy..."
-          wget -q https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.64.1_Linux-64bit.deb
-        '''
-      }
-    }
 
     stage('Build Backend Image') {
       steps {

@@ -5,6 +5,7 @@ pipeline {
     DOCKER_NAMESPACE = "mouhamed2555"
     FRONTEND_IMAGE = "${DOCKER_NAMESPACE}/frontend:latest"
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
+    TRIVY_VERSION = "0.64.1"
   }
 
   stages {
@@ -30,14 +31,14 @@ pipeline {
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v $(pwd)/trivy-reports:/reports \
-            aquasec/trivy:0.64.1 \
+            aquasec/trivy:$TRIVY_VERSION \
             image --severity CRITICAL,HIGH --format json -o /reports/backend-report.json $BACKEND_IMAGE
 
           echo "🔍 Scan Frontend image with Trivy..."
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v $(pwd)/trivy-reports:/reports \
-            aquasec/trivy:0.64.1 \
+            aquasec/trivy:$TRIVY_VERSION \
             image --severity CRITICAL,HIGH --format json -o /reports/frontend-report.json $FRONTEND_IMAGE
         '''
       }

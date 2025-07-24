@@ -8,10 +8,11 @@ pipeline {
   }
 
   stages {
+
     stage('Install Trivy') {
       steps {
         sh '''
-          echo "🔧 Installing Trivy standalone binary..."
+          echo "🔧 Installation de Trivy..."
           curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.tar.gz -o trivy.tar.gz
           tar zxvf trivy.tar.gz
           chmod +x trivy
@@ -22,13 +23,19 @@ pipeline {
 
     stage('Build Backend Image') {
       steps {
-        sh 'docker build -t $BACKEND_IMAGE ./backend'
+        sh '''
+          echo "🔨 Construction de l'image backend..."
+          docker build -t $BACKEND_IMAGE ./backend
+        '''
       }
     }
 
     stage('Build Frontend Image') {
       steps {
-        sh 'docker build -t $FRONTEND_IMAGE ./frontend'
+        sh '''
+          echo "🔨 Construction de l'image frontend..."
+          docker build -t $FRONTEND_IMAGE ./frontend
+        '''
       }
     }
 
@@ -36,10 +43,10 @@ pipeline {
       steps {
         sh '''
           mkdir -p trivy-reports
-          echo "🔍 Scan Backend image..."
+          echo "🔍 Analyse de l'image backend..."
           ./trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
 
-          echo "🔍 Scan Frontend image..."
+          echo "🔍 Analyse de l'image frontend..."
           ./trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
         '''
       }
@@ -54,6 +61,7 @@ pipeline {
       steps {
         withCredentials([usernamePassword(credentialsId: 'devflow', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
+            echo "📤 Connexion à Docker Hub et push des images..."
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
             docker push $BACKEND_IMAGE
             docker push $FRONTEND_IMAGE
@@ -64,8 +72,21 @@ pipeline {
 
     stage('Deploy with Docker Compose') {
       steps {
-        sh 'docker-compose down && docker-compose up -d'
+        sh '''
+          echo "🚀 Déploiement avec docker-compose..."
+          docker-compose down
+          docker-compose up -d
+        '''
       }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ Pipeline exécuté avec succès.'
+    }
+    failure {
+      echo '❌ Échec du pipeline.'
     }
   }
 }

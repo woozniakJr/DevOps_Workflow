@@ -15,8 +15,7 @@ pipeline {
           curl -sfL https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.64.1_Linux-64bit.tar.gz -o trivy.tar.gz
           tar zxvf trivy.tar.gz
           chmod +x trivy
-          mv trivy $WORKSPACE/
-          $WORKSPACE/trivy --version
+          ./trivy --version
         '''
       }
     }
@@ -38,10 +37,10 @@ pipeline {
         sh '''
           mkdir -p trivy-reports
           echo "🔍 Scan Backend image..."
-          $WORKSPACE/trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
+          ./trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
 
           echo "🔍 Scan Frontend image..."
-          $WORKSPACE/trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
+          ./trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
         '''
       }
       post {

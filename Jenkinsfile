@@ -7,7 +7,7 @@ pipeline {
     BACKEND_IMAGE  = "${DOCKER_NAMESPACE}/backend:latest"
   }
 
-
+  stages {
     stage('Build Backend Image') {
       steps {
         bat 'docker build -t %BACKEND_IMAGE% ./backend'

@@ -20,6 +20,20 @@ pipeline {
       }
     }
 
+    stage('Trivy Scan Images') {
+      steps {
+        sh '''
+          mkdir -p trivy-reports
+
+          echo "🔍 Scan Backend image..."
+          trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/backend-report.json $BACKEND_IMAGE
+
+          echo "🔍 Scan Frontend image..."
+          trivy image --severity CRITICAL,HIGH --format json -o trivy-reports/frontend-report.json $FRONTEND_IMAGE
+        '''
+      }
+    }
+
     stage('Push to Docker Hub') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'devflow', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -36,6 +50,12 @@ pipeline {
       steps {
         sh 'docker-compose down && docker-compose up -d'
       }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'trivy-reports/*.json', fingerprint: true
     }
   }
 }
